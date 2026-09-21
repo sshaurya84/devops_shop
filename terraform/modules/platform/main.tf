@@ -82,7 +82,9 @@ resource "aws_eks_node_group" "general" {
   instance_types = ["t3.small"]
 
   scaling_config {
-    desired_size = 2
+    # Two t3.small nodes exhaust their pod-IP capacity once the application,
+    # EKS add-ons, load-balancer controller, and Argo CD run together.
+    desired_size = 3
     min_size     = 2
     max_size     = 3
   }
