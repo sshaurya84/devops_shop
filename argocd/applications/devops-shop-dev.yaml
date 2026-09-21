@@ -4,7 +4,8 @@ metadata:
   name: devops-shop-dev
   namespace: argocd
   finalizers:
-    - resources-finalizer.argocd.argoproj.io
+    # Delete managed resources before deleting this Application.
+    - resources-finalizer.argocd.argoproj.io/foreground
 spec:
   project: default
   source:

@@ -12,3 +12,11 @@ module "platform" {
   public_subnet_ids  = var.public_subnet_ids
   private_subnet_ids = var.private_subnet_ids
 }
+
+module "github_actions" {
+  source = "../../modules/github-actions"
+
+  aws_region        = var.aws_region
+  project           = var.project
+  github_repository = var.github_repository
+}

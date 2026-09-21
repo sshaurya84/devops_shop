@@ -1,0 +1,81 @@
+name: Product service CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/product-service/**
+      - .github/workflows/product-service-ci.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: devops-shop/product-service
+  IMAGE_NAME: 029633610454.dkr.ecr.us-east-1.amazonaws.com/devops-shop/product-service
+
+jobs:
+  test-build-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Smoke test the API
+        shell: bash
+        run: |
+          PORT=3001 node apps/product-service/src/server.js > /tmp/product-service.log 2>&1 &
+          api_pid=$!
+          trap 'kill $api_pid' EXIT
+          for attempt in {1..10}; do
+            curl --fail --silent http://localhost:3001/health && exit 0
+            sleep 1
+          done
+          cat /tmp/product-service.log
+          exit 1
+
+      - name: Configure AWS credentials using GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::029633610454:role/devops-shop-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        shell: bash
+        run: aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "${IMAGE_NAME%/*}"
+
+      - name: Build and push immutable image
+        shell: bash
+        run: |
+          image_tag="${GITHUB_SHA::12}"
+          docker build --file apps/product-service/Dockerfile --tag "$IMAGE_NAME:$image_tag" .
+          docker push "$IMAGE_NAME:$image_tag"
+          echo "IMAGE_TAG=$image_tag" >> "$GITHUB_ENV"
+
+      - name: Update the GitOps image tag
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'k8s/overlays/dev/kustomization.yaml';
+          const name = process.env.IMAGE_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const expression = new RegExp(`(name: ${name}\\s*\\n\\s*newTag: ).*`);
+          const contents = fs.readFileSync(file, 'utf8');
+          if (!expression.test(contents)) throw new Error('product-service image entry was not found');
+          fs.writeFileSync(file, contents.replace(expression, `$1${process.env.IMAGE_TAG}`));
+          NODE
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add k8s/overlays/dev/kustomization.yaml
+          git diff --cached --quiet || git commit -m "chore(gitops): deploy product-service $IMAGE_TAG"
+          git push

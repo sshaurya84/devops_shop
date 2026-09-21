@@ -26,3 +26,8 @@ variable "public_subnet_ids" {
 variable "private_subnet_ids" {
   type = list(string)
 }
+
+variable "github_repository" {
+  type    = string
+  default = "sshaurya84/devops_shop"
+}
