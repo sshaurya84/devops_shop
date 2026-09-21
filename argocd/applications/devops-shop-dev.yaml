@@ -16,5 +16,11 @@ spec:
     server: https://kubernetes.default.svc
     namespace: devops-shop
   syncPolicy:
+    # Git commits now deploy automatically. Prune applies only to resources
+    # tracked by this Application; the locally-created database Secret is not
+    # tracked and will not be deleted.
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
