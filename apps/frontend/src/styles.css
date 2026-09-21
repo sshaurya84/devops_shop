@@ -1,0 +1,16 @@
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #16261f; background: #f5f5ee; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1120px; margin: auto; padding: 24px; }
+header { display: flex; justify-content: space-between; font-size: .85rem; letter-spacing: .08em; }
+header strong { color: #597768; }
+.hero { padding: 70px 0 42px; max-width: 750px; }
+.hero p { color: #597768; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+h1 { font-size: clamp(2.4rem, 7vw, 5.5rem); line-height: 1; margin: 0; letter-spacing: -.06em; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+article { background: white; padding: 16px; border-radius: 16px; box-shadow: 0 8px 24px #16261f12; }
+article h2 { margin-bottom: 4px; }
+article p { color: #617069; min-height: 48px; }
+.placeholder { height: 180px; display: grid; place-items: center; background: #dfe9dc; border-radius: 10px; color: #597768; font-size: 4rem; font-weight: 700; }
+.status { padding: 16px; background: #fff4d6; border-radius: 8px; }
+
