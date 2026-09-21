@@ -5,4 +5,13 @@ dist/
 !.env.example
 coverage/
 *.log
-
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+tfplan
+*.tfplan
+k8s/secret.local.yaml

@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: devops-shop
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: devops-shop
+data:
+  001-init.sql: |
+    CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, name VARCHAR(120) NOT NULL, description TEXT NOT NULL, price NUMERIC(10,2) NOT NULL CHECK (price >= 0));
+    INSERT INTO products (name, description, price) VALUES ('Cloud Runner', 'Lightweight everyday trainers.', 89.99), ('Canvas Backpack', 'A durable bag for work and travel.', 64.99), ('Steel Water Bottle', 'Insulated, reusable, and leak-proof.', 24.99) ON CONFLICT DO NOTHING;
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: devops-shop
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: gp3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: devops-shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres }
+  template:
+    metadata:
+      labels: { app: postgres }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports: [{ containerPort: 5432 }]
+          env:
+            # An EBS volume root contains lost+found. PostgreSQL must initialize
+            # below the mount point rather than treating that root as PGDATA.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            - name: POSTGRES_DB
+              valueFrom: { configMapKeyRef: { name: product-service-config, key: POSTGRES_DB } }
+            - name: POSTGRES_USER
+              valueFrom: { configMapKeyRef: { name: product-service-config, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: postgres-credentials, key: password } }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+            - { name: init, mountPath: /docker-entrypoint-initdb.d/001-init.sql, subPath: 001-init.sql, readOnly: true }
+          readinessProbe: { exec: { command: ["sh", "-c", "pg_isready -U postgres -d ecommerce"] }, initialDelaySeconds: 5 }
+      volumes:
+        - { name: data, persistentVolumeClaim: { claimName: postgres-data } }
+        - { name: init, configMap: { name: postgres-init } }

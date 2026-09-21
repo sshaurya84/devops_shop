@@ -1,0 +1,10 @@
+resources:
+  - ../../base
+
+# Keep image versions in the environment overlay. CI will update these tags in
+# Git, and Argo CD will reconcile the resulting desired state.
+images:
+  - name: 029633610454.dkr.ecr.us-east-1.amazonaws.com/devops-shop/frontend
+    newTag: 1ce8a4b0c252
+  - name: 029633610454.dkr.ecr.us-east-1.amazonaws.com/devops-shop/product-service
+    newTag: 1ce8a4b0c252
