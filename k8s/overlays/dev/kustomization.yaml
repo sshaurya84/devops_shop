@@ -7,4 +7,4 @@ images:
   - name: 029633610454.dkr.ecr.us-east-1.amazonaws.com/devops-shop/frontend
     newTag: 1ce8a4b0c252
   - name: 029633610454.dkr.ecr.us-east-1.amazonaws.com/devops-shop/product-service
-    newTag: 47a30f9b60b3
+    newTag: 93eb59e83022
